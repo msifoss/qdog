@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Lane {
+  id        Int       @id @default(autoincrement())
+  name      String    // e.g., "Lane 1", "Lane 2"
+  status    String    @default("available") // available, occupied, maintenance
+  currentCustomerId Int? @unique
+  currentCustomer   QueueEntry? @relation("CurrentLane", fields: [currentCustomerId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model QueueEntry {
+  id            Int       @id @default(autoincrement())
+  customerName  String
+  email         String
+  phone         String?
+  partySize     Int       @default(1)
+  status        String    @default("waiting") // waiting, notified, assigned, completed, no_show
+  position      Int?      // Current position in queue (null if not waiting)
+  notifiedAt    DateTime? // When they were notified
+  assignedAt    DateTime? // When they were assigned a lane
+  completedAt   DateTime? // When they finished
+  currentLane   Lane?     @relation("CurrentLane")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Settings {
+  id                  Int     @id @default(1)
+  rangeName           String  @default("Shooting Range")
+  defaultSessionMins  Int     @default(60)
+  notifyTimeoutMins   Int     @default(5) // Time to respond before marked no-show
+  emailNotifications  Boolean @default(true)
+}

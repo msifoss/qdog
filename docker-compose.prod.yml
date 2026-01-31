@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  qdog:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/qdog.db
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL}
+    volumes:
+      - qdog-data:/app/data
+    restart: unless-stopped
+
+  # Optional: Nginx reverse proxy with SSL
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - qdog
+    restart: unless-stopped
+
+volumes:
+  qdog-data:

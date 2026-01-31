@@ -1,0 +1,14 @@
+# QDog Configuration
+# Copy this file and fill in your values
+
+# Resend API key for email notifications
+# Get yours at https://resend.com
+resend_api_key: ""
+
+# Range settings (can also be changed in admin UI)
+range_name: "QDog Range"
+default_session_mins: 60
+notify_timeout_mins: 5
+
+# Server settings
+port: 3000

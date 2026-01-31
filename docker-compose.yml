@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  qdog:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/qdog.db
+      - NODE_ENV=production
+    volumes:
+      - qdog-data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+
+volumes:
+  qdog-data:
