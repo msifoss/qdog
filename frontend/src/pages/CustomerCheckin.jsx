@@ -5,6 +5,8 @@ export default function CustomerCheckin({ socket }) {
   const [email, setEmail] = useState('')
   const [sex, setSex] = useState('male')
   const [preview, setPreview] = useState(null)
+  const [displayedPreview, setDisplayedPreview] = useState(null)
+  const [imageLoaded, setImageLoaded] = useState(false)
   const [queueCount, setQueueCount] = useState(null)
   const [publicQueue, setPublicQueue] = useState([])
   const [loading, setLoading] = useState(false)
@@ -52,19 +54,35 @@ export default function CustomerCheckin({ socket }) {
   }
 
   const fetchPreview = async () => {
+    setRerolling(true)
+    setImageLoaded(false)
     try {
       const res = await fetch(`/api/queue/preview?sex=${sex}`)
       const data = await res.json()
       setPreview(data)
+
+      // Preload the image before displaying
+      const img = new Image()
+      img.onload = () => {
+        setDisplayedPreview(data)
+        setImageLoaded(true)
+        setRerolling(false)
+      }
+      img.onerror = () => {
+        // Still show it even if image fails
+        setDisplayedPreview(data)
+        setImageLoaded(true)
+        setRerolling(false)
+      }
+      img.src = `/avatars/${data.avatar}.png`
     } catch (err) {
       console.error('Failed to fetch preview:', err)
+      setRerolling(false)
     }
   }
 
-  const handleReroll = async () => {
-    setRerolling(true)
-    await fetchPreview()
-    setRerolling(false)
+  const handleReroll = () => {
+    fetchPreview()
   }
 
   const handleSubmit = async (e) => {
@@ -82,8 +100,8 @@ export default function CustomerCheckin({ socket }) {
           customerName: name.trim(),
           email: email.trim(),
           sex,
-          handle: preview?.handle,
-          avatar: preview?.avatar
+          handle: displayedPreview?.handle,
+          avatar: displayedPreview?.avatar
         })
       })
 
@@ -106,6 +124,8 @@ export default function CustomerCheckin({ socket }) {
       setName('')
       setEmail('')
       setPreview(null)
+      setDisplayedPreview(null)
+      setImageLoaded(false)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -116,6 +136,8 @@ export default function CustomerCheckin({ socket }) {
   const handleAddAnother = () => {
     setAdded(null)
     setSex('male')
+    setDisplayedPreview(null)
+    setImageLoaded(false)
     fetchPreview()
   }
 
@@ -230,22 +252,30 @@ export default function CustomerCheckin({ socket }) {
           )}
 
           {/* Avatar Preview - larger and centered above callsign */}
-          {preview && (
+          {(preview || rerolling) && (
             <div className="mb-4 p-4 bg-gray-50 rounded-xl text-center">
               <p className="text-xs text-gray-500 mb-2">Your callsign</p>
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 ring-2 ring-blue-500 mx-auto mb-2">
-                <img
-                  src={`/avatars/${preview.avatar}.png`}
-                  alt={preview.handle}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 ring-2 ring-blue-500 mx-auto mb-2 flex items-center justify-center">
+                {rerolling || !imageLoaded ? (
+                  <svg className="w-10 h-10 text-gray-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                ) : displayedPreview && (
+                  <img
+                    src={`/avatars/${displayedPreview.avatar}.png`}
+                    alt={displayedPreview.handle}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
-              <p className="font-bold text-gray-900 text-lg">{preview.handle}</p>
+              <p className="font-bold text-gray-900 text-lg">
+                {rerolling || !imageLoaded ? '... rolling ...' : displayedPreview?.handle}
+              </p>
               <button
                 type="button"
                 onClick={handleReroll}
                 disabled={rerolling}
-                className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 mt-1"
+                className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 mt-1 disabled:opacity-50"
               >
                 <svg className={`w-4 h-4 ${rerolling ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
