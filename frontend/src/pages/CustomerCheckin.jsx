@@ -255,9 +255,9 @@ export default function CustomerCheckin({ socket }) {
           {(preview || rerolling) && (
             <div className="mb-4 p-4 bg-gray-50 rounded-xl text-center">
               <p className="text-xs text-gray-500 mb-2">Your callsign</p>
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 ring-2 ring-blue-500 mx-auto mb-2 flex items-center justify-center">
+              <div className="w-20 h-20 md:w-40 md:h-40 rounded-full overflow-hidden bg-gray-700 ring-2 md:ring-4 ring-blue-500 mx-auto mb-2 flex items-center justify-center">
                 {rerolling || !imageLoaded ? (
-                  <svg className="w-10 h-10 text-gray-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10 md:w-16 md:h-16 text-gray-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 ) : displayedPreview && (
