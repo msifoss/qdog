@@ -164,180 +164,173 @@ export default function CustomerCheckin({ socket }) {
     )
   }
 
-  // Form state
+  // Form state - two column layout
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start p-4 pt-8 gap-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl font-bold text-white">Q</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Join the Queue</h1>
+    <div className="min-h-screen bg-gray-100 flex items-start justify-center p-4 pt-8">
+      <div className="w-full max-w-4xl flex flex-col md:flex-row gap-4">
+        {/* Left: Queue Display */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full md:w-1/2 min-h-[400px] flex flex-col">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Current Queue</h2>
+          {publicQueue.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-gray-400 text-center">The queue is currently empty</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {publicQueue.map((entry, index) => (
+                <div
+                  key={entry.id}
+                  className={`flex items-center gap-3 p-2 rounded-lg ${
+                    index === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    index === 0 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    {index + 1}
+                  </div>
+
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
+                    <img
+                      src={`/avatars/${entry.avatar}.png`}
+                      alt={entry.handle}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <span className={`font-medium ${index === 0 ? 'text-green-700' : 'text-gray-700'}`}>
+                    {entry.handle}
+                  </span>
+
+                  {index === 0 && (
+                    <span className="ml-auto text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                      Next up
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Join Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full md:w-1/2">
+          <h1 className="text-xl font-bold text-gray-900 text-center mb-2">Join the Queue</h1>
 
           {queueCount !== null && (
-            <div className="mt-4 inline-block bg-blue-50 rounded-lg px-4 py-2">
+            <div className="text-center mb-4">
               {queueCount === 0 ? (
-                <p className="text-blue-600 font-medium">No wait - you'll be first!</p>
+                <p className="text-blue-600 text-sm font-medium">No wait - you'll be first!</p>
               ) : (
-                <p className="text-blue-600 font-medium">
+                <p className="text-blue-600 text-sm font-medium">
                   {queueCount} {queueCount === 1 ? 'person' : 'people'} currently waiting
                 </p>
               )}
             </div>
           )}
-        </div>
 
-        {/* Avatar Preview */}
-        {preview && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-            <p className="text-sm text-gray-500 text-center mb-3">Your callsign preview</p>
-            <div className="flex items-center justify-center gap-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700 ring-2 ring-blue-500">
+          {/* Avatar Preview - larger and centered above callsign */}
+          {preview && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-xl text-center">
+              <p className="text-xs text-gray-500 mb-2">Your callsign</p>
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 ring-2 ring-blue-500 mx-auto mb-2">
                 <img
                   src={`/avatars/${preview.avatar}.png`}
                   alt={preview.handle}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div>
-                <p className="font-bold text-gray-900 text-lg">{preview.handle}</p>
-                <button
-                  type="button"
-                  onClick={handleReroll}
-                  disabled={rerolling}
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
-                >
-                  <svg className={`w-4 h-4 ${rerolling ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {rerolling ? 'Rolling...' : 'Re-roll'}
-                </button>
-              </div>
+              <p className="font-bold text-gray-900 text-lg">{preview.handle}</p>
+              <button
+                type="button"
+                onClick={handleReroll}
+                disabled={rerolling}
+                className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 mt-1"
+              >
+                <svg className={`w-4 h-4 ${rerolling ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {rerolling ? 'Rolling...' : 'Re-roll'}
+              </button>
             </div>
-          </div>
-        )}
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Sex Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Avatar Style
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Sex Selection */}
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setSex('male')}
-                className={`py-3 px-4 rounded-lg font-medium border-2 transition-all ${
+                className={`py-2 px-3 rounded-lg text-sm font-medium border-2 transition-all ${
                   sex === 'male'
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                 }`}
               >
-                <span className="text-xl mr-2">🦅</span> Male
+                Male
               </button>
               <button
                 type="button"
                 onClick={() => setSex('female')}
-                className={`py-3 px-4 rounded-lg font-medium border-2 transition-all ${
+                className={`py-2 px-3 rounded-lg text-sm font-medium border-2 transition-all ${
                   sex === 'female'
                     ? 'border-pink-500 bg-pink-50 text-pink-700'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                 }`}
               >
-                <span className="text-xl mr-2">🦢</span> Female
+                Female
               </button>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Your Name
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              placeholder="Enter your name"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              placeholder="your@email.com"
-            />
-            <p className="text-xs text-gray-500 mt-1">One spot per email address</p>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Your Name
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your name"
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={!name.trim() || !email.trim() || loading}
-            className="w-full bg-blue-600 text-white py-4 px-4 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Joining...' : 'Join Queue'}
-          </button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="your@email.com"
+              />
+              <p className="text-xs text-gray-500 mt-1">One spot per email address</p>
+            </div>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
-          <a href="/admin" className="text-blue-600 hover:underline">Admin Dashboard</a>
-        </p>
-      </div>
-
-      {/* Public Queue Display */}
-      {publicQueue.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Current Queue</h2>
-          <div className="space-y-2">
-            {publicQueue.map((entry, index) => (
-              <div
-                key={entry.id}
-                className={`flex items-center gap-3 p-2 rounded-lg ${
-                  index === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                  index === 0 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
-                }`}>
-                  {index + 1}
-                </div>
-
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
-                  <img
-                    src={`/avatars/${entry.avatar}.png`}
-                    alt={entry.handle}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                <span className={`font-medium ${index === 0 ? 'text-green-700' : 'text-gray-700'}`}>
-                  {entry.handle}
-                </span>
-
-                {index === 0 && (
-                  <span className="ml-auto text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
-                    Next up
-                  </span>
-                )}
+            {error && (
+              <div className="bg-red-50 text-red-700 px-3 py-2 rounded-lg text-sm">
+                {error}
               </div>
-            ))}
-          </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!name.trim() || !email.trim() || loading}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Joining...' : 'Join Queue'}
+            </button>
+          </form>
+
+          <p className="text-center text-gray-500 text-xs mt-4">
+            <a href="/admin" className="text-blue-600 hover:underline">Admin Dashboard</a>
+          </p>
         </div>
-      )}
+      </div>
     </div>
   )
 }
