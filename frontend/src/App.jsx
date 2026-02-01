@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
 import AdminDashboard from './pages/AdminDashboard'
 import CustomerCheckin from './pages/CustomerCheckin'
-import QueueStatus from './pages/QueueStatus'
 
 // Socket connection
 const socket = io(window.location.origin, {
@@ -28,7 +27,6 @@ function App() {
       <Routes>
         <Route path="/" element={<CustomerCheckin socket={socket} />} />
         <Route path="/admin" element={<AdminDashboard socket={socket} />} />
-        <Route path="/status/:id" element={<QueueStatus socket={socket} />} />
       </Routes>
 
       {/* Connection indicator */}

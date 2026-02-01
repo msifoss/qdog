@@ -9,7 +9,6 @@ import config from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-import laneRoutes from './routes/lanes.js';
 import queueRoutes from './routes/queue.js';
 import settingsRoutes from './routes/settings.js';
 import { setupSocket } from './socket.js';
@@ -38,7 +37,6 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-app.use('/api/lanes', laneRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/settings', settingsRoutes);
 
@@ -63,34 +61,14 @@ if (config.nodeEnv === 'production') {
 // Setup socket handlers
 setupSocket(io, prisma);
 
-// Initialize default settings and lanes if needed
+// Initialize default settings if needed
 async function initializeData() {
-  // Create default settings if not exists
   const settings = await prisma.settings.findFirst();
   if (!settings) {
     await prisma.settings.create({
-      data: {
-        rangeName: config.rangeName,
-        defaultSessionMins: config.defaultSessionMins,
-        notifyTimeoutMins: config.notifyTimeoutMins
-      }
+      data: { businessName: config.rangeName || 'QDog' }
     });
-  }
-
-  // Create default lanes if none exist
-  const laneCount = await prisma.lane.count();
-  if (laneCount === 0) {
-    await prisma.lane.createMany({
-      data: [
-        { name: 'Lane 1' },
-        { name: 'Lane 2' },
-        { name: 'Lane 3' },
-        { name: 'Lane 4' },
-        { name: 'Lane 5' },
-        { name: 'Lane 6' }
-      ]
-    });
-    console.log('Created 6 default lanes');
+    console.log('Created default settings');
   }
 }
 

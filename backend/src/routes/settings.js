@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
 
     if (!settings) {
       settings = await prisma.settings.create({
-        data: { rangeName: 'QDog Range' }
+        data: { businessName: 'QDog' }
       });
     }
 
@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 // Update settings
 router.put('/', async (req, res) => {
   const prisma = req.app.get('prisma');
-  const { rangeName, defaultSessionMins, notifyTimeoutMins, emailNotifications } = req.body;
+  const { businessName, emailNotifications } = req.body;
 
   try {
     let settings = await prisma.settings.findFirst();
@@ -32,9 +32,7 @@ router.put('/', async (req, res) => {
     if (!settings) {
       settings = await prisma.settings.create({
         data: {
-          rangeName: rangeName || 'QDog Range',
-          defaultSessionMins: defaultSessionMins || 60,
-          notifyTimeoutMins: notifyTimeoutMins || 5,
+          businessName: businessName || 'QDog',
           emailNotifications: emailNotifications ?? true
         }
       });
@@ -42,9 +40,7 @@ router.put('/', async (req, res) => {
       settings = await prisma.settings.update({
         where: { id: settings.id },
         data: {
-          ...(rangeName !== undefined && { rangeName }),
-          ...(defaultSessionMins !== undefined && { defaultSessionMins }),
-          ...(notifyTimeoutMins !== undefined && { notifyTimeoutMins }),
+          ...(businessName !== undefined && { businessName }),
           ...(emailNotifications !== undefined && { emailNotifications })
         }
       });
