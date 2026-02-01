@@ -1,0 +1,88 @@
+# QDog Configuration
+# This is the main configuration file for the QDog shooting range queue system
+#
+# SETUP: Copy this file to config.yaml and fill in your values
+#        cp config.example.yaml config.yaml
+
+# =============================================================================
+# API KEYS (Keep these secret! Do not commit to public repos)
+# =============================================================================
+
+# Resend API key for email/SMS notifications
+# Get yours at https://resend.com
+resend_api_key: "re_xxxxxxxxxxxxx"
+
+# OpenAI API key for avatar generation
+# Get yours at https://platform.openai.com/api-keys
+openai_api_key: "sk-xxxxxxxxxxxxx"
+
+# =============================================================================
+# RANGE SETTINGS
+# =============================================================================
+
+# Display name for your range
+range_name: "QDog Range"
+
+# Default shooting session duration (minutes)
+default_session_mins: 60
+
+# How long to wait for customer response before moving to next in queue (minutes)
+notify_timeout_mins: 5
+
+# =============================================================================
+# AVATAR & HANDLE SETTINGS
+# =============================================================================
+
+# Avatar generation settings
+avatars:
+  # Directory to store generated avatars (relative to frontend/public)
+  directory: "avatars"
+
+  # Image size for DALL-E generation
+  size: "1024x1024"
+
+  # Style prompt additions
+  style: "tactical cartoon style, wearing shooting ear protection headset, cool confident expression, military tactical gear, simple flat design, circular frame, dark background, no text, video game character avatar"
+
+# Handle generation word pools
+handles:
+  # Adjectives for handle generation (shooting-themed)
+  adjectives:
+    - Steady
+    - Quick
+    - Sharp
+    - Silent
+    - Iron
+    - Steel
+    - True
+    - Swift
+    - Calm
+    - Ready
+    - Locked
+    - Loaded
+    - Primed
+    - Zeroed
+    - Scoped
+    - Sighted
+    - Aimed
+    - Tactical
+
+# =============================================================================
+# SERVER SETTINGS
+# =============================================================================
+
+# Port for the backend server
+port: 3000
+
+# Frontend URL (for CORS configuration)
+frontend_url: "http://localhost:5173"
+
+# Environment: development, production
+node_env: "development"
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+
+# Database URL (SQLite for development, can be changed for production)
+database_url: "file:./dev.db"

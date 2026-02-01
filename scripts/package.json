@@ -1,0 +1,12 @@
+{
+  "name": "qdog-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "generate-avatars": "node generate-avatars.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "openai": "^4.0.0"
+  }
+}
