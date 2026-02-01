@@ -1,12 +1,23 @@
 /**
  * Handle and Avatar Generator Service
  * Generates unique tactical handles and assigns avatars for queue entries
- * Supports male and female avatar sets
+ * Reads available animals from manifest files (synced with actual PNG files)
  */
 
 import { PrismaClient } from '@prisma/client';
+import { readFileSync, readdirSync, writeFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const prisma = new PrismaClient();
+
+// Path to avatar directories
+const AVATARS_DIR = join(__dirname, '..', 'public', 'avatars');
+const MALE_MANIFEST = join(AVATARS_DIR, 'manifest.json');
+const FEMALE_MANIFEST = join(AVATARS_DIR, 'female', 'manifest.json');
 
 // Shooting-themed adjectives
 const ADJECTIVES = [
@@ -16,79 +27,128 @@ const ADJECTIVES = [
   'Hot', 'Wild', 'Lone', 'Alpha', 'Bravo', 'Delta', 'Echo', 'Ghost'
 ];
 
-// Male animals (must match generated avatars in /avatars/)
-const MALE_ANIMALS = [
-  // Predator Birds (15)
-  'Hawk', 'Falcon', 'Eagle', 'Owl', 'Raven', 'Condor', 'Osprey', 'Kestrel',
-  'Harrier', 'Vulture', 'Kite', 'Shrike', 'Goshawk', 'Merlin', 'Phoenix',
+// Cache for animal lists (loaded from manifests)
+let maleAnimals = [];
+let femaleAnimals = [];
+let lastManifestLoad = 0;
 
-  // Canines (12)
-  'Wolf', 'Fox', 'Coyote', 'Jackal', 'Dingo', 'Husky', 'Shepherd', 'Malinois',
-  'Doberman', 'Rottweiler', 'Hound', 'Akita',
+/**
+ * Convert lowercase animal name to PascalCase for display
+ * e.g., "bluejay" -> "BlueJay", "shewolf" -> "SheWolf"
+ */
+function toPascalCase(str) {
+  // Special cases for compound names
+  const specialCases = {
+    'bluejay': 'BlueJay',
+    'shewolf': 'SheWolf',
+    'honeybadger': 'HoneyBadger'
+  };
 
-  // Felines (15)
-  'Cougar', 'Lynx', 'Panther', 'Tiger', 'Lion', 'Jaguar', 'Leopard', 'Cheetah',
-  'Bobcat', 'Ocelot', 'Caracal', 'Serval', 'Puma', 'Wildcat', 'Sabertooth',
+  if (specialCases[str.toLowerCase()]) {
+    return specialCases[str.toLowerCase()];
+  }
 
-  // Bears & Large Mammals (12)
-  'Bear', 'Grizzly', 'Kodiak', 'Polar', 'Wolverine', 'Badger', 'Bison', 'Buffalo',
-  'Moose', 'Elk', 'Stag', 'Ram',
+  // Default: capitalize first letter
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
 
-  // Reptiles (10)
-  'Viper', 'Cobra', 'Python', 'Mamba', 'Rattler', 'Gator', 'Croc', 'Komodo',
-  'Gecko', 'Iguana',
+/**
+ * Load animal lists from manifest files
+ */
+function loadManifests() {
+  try {
+    if (existsSync(MALE_MANIFEST)) {
+      const data = JSON.parse(readFileSync(MALE_MANIFEST, 'utf8'));
+      maleAnimals = data.animals || [];
+      console.log(`Loaded ${maleAnimals.length} male animals from manifest`);
+    } else {
+      console.warn('Male manifest not found, using empty list');
+      maleAnimals = [];
+    }
+  } catch (err) {
+    console.error('Failed to load male manifest:', err.message);
+    maleAnimals = [];
+  }
 
-  // Other Predators (12)
-  'Shark', 'Barracuda', 'Orca', 'Mantis', 'Scorpion', 'Tarantula', 'Hornet',
-  'Wasp', 'Mongoose', 'Weasel', 'Ferret', 'Marten',
+  try {
+    if (existsSync(FEMALE_MANIFEST)) {
+      const data = JSON.parse(readFileSync(FEMALE_MANIFEST, 'utf8'));
+      femaleAnimals = data.animals || [];
+      console.log(`Loaded ${femaleAnimals.length} female animals from manifest`);
+    } else {
+      console.warn('Female manifest not found, using empty list');
+      femaleAnimals = [];
+    }
+  } catch (err) {
+    console.error('Failed to load female manifest:', err.message);
+    femaleAnimals = [];
+  }
 
-  // Wild Cards (12)
-  'Rhino', 'Hippo', 'Boar', 'Warthog', 'Hyena', 'Gorilla', 'Mandrill',
-  'HoneyBadger', 'Ratel', 'Armadillo', 'Pangolin',
+  lastManifestLoad = Date.now();
+}
 
-  // Mythical (11)
-  'Dragon', 'Griffin', 'Chimera', 'Cerberus', 'Hydra', 'Basilisk', 'Wyvern',
-  'Manticore', 'Thunderbird', 'Fenrir', 'Kraken'
-];
+/**
+ * Refresh manifests by scanning actual PNG files in the directories
+ * Returns the updated animal counts
+ */
+export function refreshManifests() {
+  const results = { male: 0, female: 0, errors: [] };
 
-// Female animals (must match generated avatars in /avatars/female/)
-const FEMALE_ANIMALS = [
-  // Elegant Birds (18)
-  'Swan', 'Dove', 'Hummingbird', 'Peacock', 'Flamingo', 'Crane', 'Heron', 'Songbird',
-  'Cardinal', 'BlueJay', 'Finch', 'Sparrow', 'Nightingale', 'Lark', 'Wren', 'Robin',
-  'Oriole', 'Starling',
+  try {
+    // Scan male avatars
+    const maleDir = AVATARS_DIR;
+    if (existsSync(maleDir)) {
+      const files = readdirSync(maleDir)
+        .filter(f => f.endsWith('.png') && f !== 'placeholder.png')
+        .map(f => f.replace('.png', ''));
 
-  // Felines (15)
-  'Lioness', 'Tigress', 'Leopardess', 'Cheetah', 'Panther', 'Jaguar', 'Lynx', 'Ocelot',
-  'Caracal', 'Serval', 'Wildcat', 'Cougar', 'Puma', 'Bobcat', 'Margay',
+      const manifest = {
+        animals: files,
+        generated: new Date().toISOString(),
+        total: files.length,
+        gender: 'male'
+      };
 
-  // Canines (10)
-  'Vixen', 'SheWolf', 'Coyote', 'Dingo', 'Husky', 'Malinois', 'Collie', 'Samoyed',
-  'Shiba', 'Akita',
+      writeFileSync(MALE_MANIFEST, JSON.stringify(manifest, null, 2));
+      results.male = files.length;
+    }
+  } catch (err) {
+    results.errors.push(`Male: ${err.message}`);
+  }
 
-  // Graceful Mammals (15)
-  'Doe', 'Gazelle', 'Antelope', 'Impala', 'Springbok', 'Oryx', 'Ibex', 'Chamois',
-  'Eland', 'Kudu', 'Nyala', 'Sable', 'Gemsbok', 'Bongo', 'Okapi',
+  try {
+    // Scan female avatars
+    const femaleDir = join(AVATARS_DIR, 'female');
+    if (existsSync(femaleDir)) {
+      const files = readdirSync(femaleDir)
+        .filter(f => f.endsWith('.png') && f !== 'placeholder.png')
+        .map(f => f.replace('.png', ''));
 
-  // Fierce Predators (12)
-  'Orca', 'Dolphin', 'Shark', 'Barracuda', 'Manta', 'Stingray', 'Piranha', 'Moray',
-  'Marlin', 'Sailfish', 'Swordfish', 'Wahoo',
+      const manifest = {
+        animals: files,
+        generated: new Date().toISOString(),
+        total: files.length,
+        gender: 'female'
+      };
 
-  // Exotic (12)
-  'Parrot', 'Macaw', 'Cockatoo', 'Toucan', 'Quetzal', 'Phoenix', 'Firebird',
-  'Thunderbird', 'Harpy', 'Siren', 'Valkyrie', 'Raven',
+      writeFileSync(FEMALE_MANIFEST, JSON.stringify(manifest, null, 2));
+      results.female = files.length;
+    }
+  } catch (err) {
+    results.errors.push(`Female: ${err.message}`);
+  }
 
-  // Reptiles (8)
-  'Cobra', 'Viper', 'Mamba', 'Python', 'Anaconda', 'Asp', 'Taipan', 'Krait',
+  // Reload the cached lists
+  loadManifests();
 
-  // Mythical (8)
-  'Dragon', 'Griffin', 'Sphinx', 'Chimera', 'Hydra', 'Basilisk', 'Wyvern', 'Pegasus'
-];
+  return results;
+}
 
 /**
  * Get a random element from an array
  */
 function randomFrom(arr) {
+  if (!arr || arr.length === 0) return null;
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
@@ -103,26 +163,20 @@ function randomNumber(min, max) {
  * Get animals array based on sex
  */
 function getAnimalsForSex(sex) {
-  return sex === 'female' ? FEMALE_ANIMALS : MALE_ANIMALS;
+  // Ensure manifests are loaded
+  if (maleAnimals.length === 0 && femaleAnimals.length === 0) {
+    loadManifests();
+  }
+  return sex === 'female' ? femaleAnimals : maleAnimals;
 }
 
 /**
  * Get avatar path based on sex
+ * Returns placeholder path if the animal isn't found
  */
 function getAvatarPath(animal, sex) {
   const animalLower = animal.toLowerCase();
   return sex === 'female' ? `female/${animalLower}` : animalLower;
-}
-
-/**
- * Generate a handle candidate for given sex
- */
-function generateHandleCandidate(sex = 'male') {
-  const adjective = randomFrom(ADJECTIVES);
-  const animals = getAnimalsForSex(sex);
-  const animal = randomFrom(animals);
-  const number = randomNumber(1, 99);
-  return { handle: `${adjective}${animal}${number}`, animal };
 }
 
 /**
@@ -133,10 +187,21 @@ export function generatePreview(sex = 'male') {
   const adjective = randomFrom(ADJECTIVES);
   const animals = getAnimalsForSex(sex);
   const animal = randomFrom(animals);
+
+  // Fallback if no animals available
+  if (!animal) {
+    return {
+      handle: `${adjective}Unknown${randomNumber(1, 99)}`,
+      avatar: sex === 'female' ? 'female/placeholder' : 'placeholder',
+      animal: 'unknown'
+    };
+  }
+
   const number = randomNumber(1, 99);
+  const displayName = toPascalCase(animal);
 
   return {
-    handle: `${adjective}${animal}${number}`,
+    handle: `${adjective}${displayName}${number}`,
     avatar: getAvatarPath(animal, sex),
     animal: animal.toLowerCase()
   };
@@ -146,8 +211,16 @@ export function generatePreview(sex = 'male') {
  * Generate a unique handle that doesn't exist in the database
  */
 export async function generateUniqueHandle(sex = 'male', maxAttempts = 50) {
+  const animals = getAnimalsForSex(sex);
+
   for (let i = 0; i < maxAttempts; i++) {
-    const { handle } = generateHandleCandidate(sex);
+    const adjective = randomFrom(ADJECTIVES);
+    const animal = randomFrom(animals);
+    if (!animal) break;
+
+    const displayName = toPascalCase(animal);
+    const number = randomNumber(1, 99);
+    const handle = `${adjective}${displayName}${number}`;
 
     const existing = await prisma.queueEntry.findUnique({
       where: { handle }
@@ -159,8 +232,10 @@ export async function generateUniqueHandle(sex = 'male', maxAttempts = 50) {
   }
 
   // Fallback: add timestamp to ensure uniqueness
-  const { handle } = generateHandleCandidate(sex);
-  return `${handle}${Date.now() % 1000}`;
+  const adjective = randomFrom(ADJECTIVES);
+  const animal = randomFrom(animals) || 'Unknown';
+  const displayName = toPascalCase(animal);
+  return `${adjective}${displayName}${Date.now() % 1000}`;
 }
 
 /**
@@ -172,9 +247,19 @@ export async function generateHandleAndAvatar(sex = 'male') {
   const animals = getAnimalsForSex(sex);
   const animal = randomFrom(animals);
 
+  // Fallback if no animals
+  if (!animal) {
+    return {
+      handle: `${adjective}Unknown${Date.now() % 1000}`,
+      avatar: sex === 'female' ? 'female/placeholder' : 'placeholder'
+    };
+  }
+
+  const displayName = toPascalCase(animal);
+
   // Try to create a unique handle with this animal
   for (let num = randomNumber(1, 99), attempts = 0; attempts < 100; attempts++) {
-    const handle = `${adjective}${animal}${num}`;
+    const handle = `${adjective}${displayName}${num}`;
 
     const existing = await prisma.queueEntry.findUnique({
       where: { handle }
@@ -194,7 +279,7 @@ export async function generateHandleAndAvatar(sex = 'male') {
   // Fallback with timestamp
   const num = Date.now() % 1000;
   return {
-    handle: `${adjective}${animal}${num}`,
+    handle: `${adjective}${displayName}${num}`,
     avatar: getAvatarPath(animal, sex)
   };
 }
@@ -233,11 +318,27 @@ export function getAdjectives() {
   return [...ADJECTIVES];
 }
 
+/**
+ * Get current manifest info
+ */
+export function getManifestInfo() {
+  return {
+    male: maleAnimals.length,
+    female: femaleAnimals.length,
+    lastLoaded: lastManifestLoad ? new Date(lastManifestLoad).toISOString() : null
+  };
+}
+
+// Load manifests on module initialization
+loadManifests();
+
 export default {
   generatePreview,
   generateUniqueHandle,
   generateHandleAndAvatar,
   validateAndReserveHandle,
   getAvailableAvatars,
-  getAdjectives
+  getAdjectives,
+  refreshManifests,
+  getManifestInfo
 };

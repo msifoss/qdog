@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Avatar from '../components/Avatar'
 
 export default function CustomerCheckin({ socket }) {
   const [name, setName] = useState('')
@@ -147,9 +148,9 @@ export default function CustomerCheckin({ socket }) {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-700 mx-auto mb-4 ring-4 ring-green-500">
-            <img
-              src={`/avatars/${added.avatar}.png`}
-              alt={added.handle}
+            <Avatar
+              avatar={added.avatar}
+              handle={added.handle}
               className="w-full h-full object-cover"
             />
           </div>
@@ -213,9 +214,9 @@ export default function CustomerCheckin({ socket }) {
                   </div>
 
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
-                    <img
-                      src={`/avatars/${entry.avatar}.png`}
-                      alt={entry.handle}
+                    <Avatar
+                      avatar={entry.avatar}
+                      handle={entry.handle}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -261,9 +262,9 @@ export default function CustomerCheckin({ socket }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 ) : displayedPreview && (
-                  <img
-                    src={`/avatars/${displayedPreview.avatar}.png`}
-                    alt={displayedPreview.handle}
+                  <Avatar
+                    avatar={displayedPreview.avatar}
+                    handle={displayedPreview.handle}
                     className="w-full h-full object-cover"
                   />
                 )}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Avatar from '../components/Avatar'
 
 export default function AdminDashboard({ socket }) {
   const [queue, setQueue] = useState([])
@@ -255,14 +256,10 @@ export default function AdminDashboard({ socket }) {
 
                   {/* Avatar */}
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
-                    <img
-                      src={`/avatars/${entry.avatar}.png`}
-                      alt={entry.handle}
+                    <Avatar
+                      avatar={entry.avatar}
+                      handle={entry.handle}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none'
-                        e.target.parentElement.innerHTML = `<span class="text-white text-sm">${entry.avatar?.[0]?.toUpperCase() || '?'}</span>`
-                      }}
                     />
                   </div>
 

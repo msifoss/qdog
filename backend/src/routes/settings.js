@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { refreshManifests, getManifestInfo } from '../services/handleGenerator.js';
 
 const router = Router();
 
@@ -47,6 +48,30 @@ router.put('/', async (req, res) => {
     }
 
     res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get avatar manifest info
+router.get('/avatars', (req, res) => {
+  try {
+    const info = getManifestInfo();
+    res.json(info);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Refresh avatar manifests by scanning PNG files
+router.post('/avatars/refresh', (req, res) => {
+  try {
+    const results = refreshManifests();
+    res.json({
+      success: true,
+      message: `Refreshed manifests: ${results.male} male, ${results.female} female avatars`,
+      ...results
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
