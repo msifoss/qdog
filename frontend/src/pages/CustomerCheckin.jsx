@@ -190,8 +190,8 @@ export default function CustomerCheckin({ socket }) {
   return (
     <div className="min-h-screen bg-gray-100 flex items-start justify-center p-4 pt-8">
       <div className="w-full max-w-4xl flex flex-col md:flex-row gap-4">
-        {/* Left: Queue Display */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full md:w-1/2 min-h-[400px] flex flex-col">
+        {/* Left on desktop, Below on mobile: Queue Display */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full md:w-1/2 min-h-[400px] flex flex-col order-2 md:order-1">
           <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Current Queue</h2>
           {publicQueue.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
@@ -235,8 +235,8 @@ export default function CustomerCheckin({ socket }) {
           )}
         </div>
 
-        {/* Right: Join Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full md:w-1/2">
+        {/* Right on desktop, Top on mobile: Join Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full md:w-1/2 order-1 md:order-2">
           <h1 className="text-xl font-bold text-gray-900 text-center mb-2">Join the Queue</h1>
 
           {queueCount !== null && (
