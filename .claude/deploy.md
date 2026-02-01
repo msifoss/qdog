@@ -8,8 +8,10 @@
 
 ## Deploy Command
 ```bash
-ssh -i ~/.ssh/id_wiki root@dakota.membies.com "cd /root/qdog && git pull && docker-compose -f docker-compose.prod.yml up --build -d"
+ssh -i ~/.ssh/id_wiki root@dakota.membies.com "cd /root/qdog && git pull && docker compose -f docker-compose.prod.yml up --build -d qdog"
 ```
+
+Note: Using `docker compose` (v2) not `docker-compose` (v1). Only deploying `qdog` service (nginx handled separately).
 
 ## Manual Steps (if needed)
 
