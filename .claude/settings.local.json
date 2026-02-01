@@ -3,7 +3,9 @@
     "allow": [
       "Bash(ssh:*)",
       "Bash(rsync:*)",
-      "Bash(scp:*)"
+      "Bash(scp:*)",
+      "Bash(rm:*)",
+      "Bash(del \"C:\\dev\\msi\\vibejams\\tyler\\qdog\\frontend\\src\\pages\\QueueStatus.jsx\")"
     ],
     "deny": [],
     "ask": []
