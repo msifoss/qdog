@@ -3,17 +3,19 @@ import { useState, useEffect } from 'react'
 export default function CustomerCheckin({ socket }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [sex, setSex] = useState('male')
+  const [preview, setPreview] = useState(null)
   const [queueCount, setQueueCount] = useState(null)
   const [publicQueue, setPublicQueue] = useState([])
   const [loading, setLoading] = useState(false)
+  const [rerolling, setRerolling] = useState(false)
   const [error, setError] = useState('')
-  const [added, setAdded] = useState(null) // { position, handle, avatar } when successfully added
+  const [added, setAdded] = useState(null)
 
   useEffect(() => {
     fetchQueueCount()
     fetchPublicQueue()
 
-    // Listen for queue updates to keep count current
     socket.on('queue-updated', () => {
       fetchQueueCount()
       fetchPublicQueue()
@@ -23,6 +25,11 @@ export default function CustomerCheckin({ socket }) {
       socket.off('queue-updated')
     }
   }, [])
+
+  // Fetch preview when sex changes
+  useEffect(() => {
+    fetchPreview()
+  }, [sex])
 
   const fetchQueueCount = async () => {
     try {
@@ -44,6 +51,22 @@ export default function CustomerCheckin({ socket }) {
     }
   }
 
+  const fetchPreview = async () => {
+    try {
+      const res = await fetch(`/api/queue/preview?sex=${sex}`)
+      const data = await res.json()
+      setPreview(data)
+    } catch (err) {
+      console.error('Failed to fetch preview:', err)
+    }
+  }
+
+  const handleReroll = async () => {
+    setRerolling(true)
+    await fetchPreview()
+    setRerolling(false)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!name.trim() || !email.trim() || loading) return
@@ -55,14 +78,19 @@ export default function CustomerCheckin({ socket }) {
       const res = await fetch('/api/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName: name.trim(), email: email.trim() })
+        body: JSON.stringify({
+          customerName: name.trim(),
+          email: email.trim(),
+          sex,
+          handle: preview?.handle,
+          avatar: preview?.avatar
+        })
       })
 
       const data = await res.json()
 
       if (!res.ok) {
         if (res.status === 409) {
-          // Already in queue
           setError(`You're already in the queue at position #${data.position}`)
         } else {
           throw new Error(data.error || 'Failed to join queue')
@@ -77,6 +105,7 @@ export default function CustomerCheckin({ socket }) {
       })
       setName('')
       setEmail('')
+      setPreview(null)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -86,14 +115,15 @@ export default function CustomerCheckin({ socket }) {
 
   const handleAddAnother = () => {
     setAdded(null)
+    setSex('male')
+    fetchPreview()
   }
 
-  // Success state - show confirmation
+  // Success state
   if (added) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
-          {/* Avatar */}
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-700 mx-auto mb-4 ring-4 ring-green-500">
             <img
               src={`/avatars/${added.avatar}.png`}
@@ -134,11 +164,11 @@ export default function CustomerCheckin({ socket }) {
     )
   }
 
-  // Default state - show form
+  // Form state
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start p-4 pt-8 gap-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl font-bold text-white">Q</span>
           </div>
@@ -157,7 +187,68 @@ export default function CustomerCheckin({ socket }) {
           )}
         </div>
 
+        {/* Avatar Preview */}
+        {preview && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+            <p className="text-sm text-gray-500 text-center mb-3">Your callsign preview</p>
+            <div className="flex items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700 ring-2 ring-blue-500">
+                <img
+                  src={`/avatars/${preview.avatar}.png`}
+                  alt={preview.handle}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900 text-lg">{preview.handle}</p>
+                <button
+                  type="button"
+                  onClick={handleReroll}
+                  disabled={rerolling}
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
+                >
+                  <svg className={`w-4 h-4 ${rerolling ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {rerolling ? 'Rolling...' : 'Re-roll'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Sex Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Avatar Style
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setSex('male')}
+                className={`py-3 px-4 rounded-lg font-medium border-2 transition-all ${
+                  sex === 'male'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-xl mr-2">🦅</span> Male
+              </button>
+              <button
+                type="button"
+                onClick={() => setSex('female')}
+                className={`py-3 px-4 rounded-lg font-medium border-2 transition-all ${
+                  sex === 'female'
+                    ? 'border-pink-500 bg-pink-50 text-pink-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-xl mr-2">🦢</span> Female
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Your Name
@@ -169,7 +260,6 @@ export default function CustomerCheckin({ socket }) {
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
               placeholder="Enter your name"
-              autoFocus
             />
           </div>
 
@@ -210,7 +300,7 @@ export default function CustomerCheckin({ socket }) {
 
       {/* Public Queue Display */}
       {publicQueue.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mt-4">
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
           <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Current Queue</h2>
           <div className="space-y-2">
             {publicQueue.map((entry, index) => (
@@ -220,14 +310,12 @@ export default function CustomerCheckin({ socket }) {
                   index === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
                 }`}
               >
-                {/* Position */}
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                   index === 0 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
                 }`}>
                   {index + 1}
                 </div>
 
-                {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
                   <img
                     src={`/avatars/${entry.avatar}.png`}
@@ -236,7 +324,6 @@ export default function CustomerCheckin({ socket }) {
                   />
                 </div>
 
-                {/* Handle */}
                 <span className={`font-medium ${index === 0 ? 'text-green-700' : 'text-gray-700'}`}>
                   {entry.handle}
                 </span>

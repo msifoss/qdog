@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { broadcastQueueUpdate } from '../socket.js';
-import { generateHandleAndAvatar } from '../services/handleGenerator.js';
+import { generateHandleAndAvatar, generatePreview, validateAndReserveHandle } from '../services/handleGenerator.js';
 
 const router = Router();
 
@@ -52,11 +52,18 @@ router.get('/public', async (req, res) => {
   }
 });
 
+// Generate a preview handle/avatar (for re-roll feature)
+router.get('/preview', (req, res) => {
+  const sex = req.query.sex === 'female' ? 'female' : 'male';
+  const preview = generatePreview(sex);
+  res.json(preview);
+});
+
 // Add to queue
 router.post('/', async (req, res) => {
   const prisma = req.app.get('prisma');
   const io = req.app.get('io');
-  const { customerName, email, phone } = req.body;
+  const { customerName, email, phone, sex, handle: previewHandle, avatar: previewAvatar } = req.body;
 
   if (!customerName?.trim()) {
     return res.status(400).json({ error: 'Name is required' });
@@ -67,6 +74,7 @@ router.post('/', async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedSex = sex === 'female' ? 'female' : 'male';
 
   try {
     // Check if email already in queue
@@ -87,14 +95,24 @@ router.post('/', async (req, res) => {
     });
     const nextPosition = (lastEntry?.position || 0) + 1;
 
-    // Generate unique handle and avatar
-    const { handle, avatar } = await generateHandleAndAvatar();
+    // Use preview handle/avatar if provided, otherwise generate new
+    let handle, avatar;
+    if (previewHandle && previewAvatar) {
+      const validated = await validateAndReserveHandle(previewHandle, previewAvatar);
+      handle = validated.handle;
+      avatar = validated.avatar;
+    } else {
+      const generated = await generateHandleAndAvatar(normalizedSex);
+      handle = generated.handle;
+      avatar = generated.avatar;
+    }
 
     const entry = await prisma.queueEntry.create({
       data: {
         customerName: customerName.trim(),
         email: normalizedEmail,
         phone: phone?.trim() || null,
+        sex: normalizedSex,
         handle,
         avatar,
         position: nextPosition

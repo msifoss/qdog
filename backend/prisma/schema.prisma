@@ -12,9 +12,10 @@ model QueueEntry {
   customerName String
   email        String   @unique
   phone        String?
-  handle       String   @unique  // Public display name (e.g., "SteadyHawk42")
-  avatar       String            // Animal avatar ID (e.g., "hawk")
-  position     Int               // Position in queue (1 = next up)
+  sex          String   @default("male")  // "male" or "female"
+  handle       String   @unique           // Public display name (e.g., "SteadyHawk42")
+  avatar       String                     // Avatar path (e.g., "hawk" or "female/lioness")
+  position     Int                        // Position in queue (1 = next up)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
