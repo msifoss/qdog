@@ -15,7 +15,8 @@ const __dirname = dirname(__filename);
 const prisma = new PrismaClient();
 
 // Path to avatar directories
-const AVATARS_DIR = join(__dirname, '..', 'public', 'avatars');
+// __dirname is /app/src/services/ in container, so go up twice to /app/, then into public/avatars
+const AVATARS_DIR = join(__dirname, '..', '..', 'public', 'avatars');
 const MALE_MANIFEST = join(AVATARS_DIR, 'manifest.json');
 const FEMALE_MANIFEST = join(AVATARS_DIR, 'female', 'manifest.json');
 
